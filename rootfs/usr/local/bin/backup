@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source /usr/local/etc/dockup.func
 
@@ -47,19 +47,18 @@ done
 set -- "${POSITIONAL[@]}" # restore positional parameters
 
 # Backup Filename
-readonly archive=$(backupFilename ${BACKUP_NAME})
+readonly ARCHIVE=$(backupFilename ${BACKUP_NAME})
 
 # Create Backup
-echo "Creating Backup"
-tar czf $archive --absolute-names ${POSITIONAL[@]}
+createBackup ${ARCHIVE} ${POSITIONAL[@]}
 
 # Configure S3 Host
-mc config host add s3 ${S3_ENDPOINT} ${S3_ACCESS_KEY} ${S3_SECRET_KEY}
+configureEndpoint
 
 # Upload backup
-mc cp $archive s3/${S3_BUCKET}/
+uploadBackup ${ARCHIVE}
 
 # Remove backup
-rm $archive
+rm ${ARCHIVE}
 
 # EOF

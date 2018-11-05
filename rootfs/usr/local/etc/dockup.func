@@ -6,6 +6,7 @@ S3_BUCKET=${BUCKET:-backup}
 S3_ACCESS_KEY=${ACCESS_KEY:-none}
 S3_SECRET_KEY=${SECRET_KEY:-none}
 S3_BACKUP_NAME=${BACKUP_NAME:-backup}
+VERBOSE=${VERBOSE:-0}
 
 # Usage / Help
 usage() {
@@ -19,6 +20,7 @@ usage() {
     echo -e "\t-s, --secret-key <key>\t\tS3 Secret Key [\$SECRET_KEY]"
     echo -e "\t-b, --bucket <bucket>\t\tBucket name [\$BUCKET]"
     echo -e "\t-n, --name <name>\t\tBackup name [\$BACKUP_NAME]"
+    echo -e "\t-v, --verbose\t\t\tShow verbose logging [\$VERBOSE=0]"
     echo -e "\t-h, --help\t\t\tShow help"
 }
 
@@ -28,6 +30,38 @@ backupTimestamp() {
 
 backupFilename() {
     echo ${S3_BACKUP_NAME}.$(backupTimestamp).tar.gz
+}
+
+verbose() {
+    if [ "${VERBOSE}" -eq "1" ]; then
+        echo "-v"
+    else
+        echo ""
+    fi
+}
+
+configureEndpoint() {
+    mc config host add s3 ${S3_ENDPOINT} ${S3_ACCESS_KEY} ${S3_SECRET_KEY}
+}
+
+downloadBackup() {
+    echo "Downloading: $ARCHIVE"
+    mc cp s3/${S3_BUCKET}/${1} ${1}
+}
+
+uploadBackup() {
+    echo "Uploading Backup"
+    mc cp ${1} s3/${S3_BUCKET}/
+}
+
+createBackup() {
+    echo "Creating Backup"
+    tar -czp $(verbose) -f ${1} --absolute-names ${2}
+}
+
+restoreBackup() {
+    echo "Restoring Backup"
+    tar -xz $(verbose) -f ${1} --absolute-names
 }
 
 # EOF

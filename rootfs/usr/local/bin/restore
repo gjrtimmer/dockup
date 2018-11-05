@@ -1,5 +1,98 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source /usr/local/etc/dockup.func
+
+set -e
+
+# Parse Commandline options
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+KEY="$1"
+
+case "$KEY" in
+    -s3|--endpoint)      # S3 Endpoint
+    S3_ENDPOINT="$2"
+    shift 2
+    ;;
+
+    -b|--bucket)        # Bucket Name
+    S3_BUCKET="$2"
+    shift 2
+    ;;
+
+    -a|--access-key)    # Access Key
+    S3_ACCESS_KEY="$2"
+    shift 2
+    ;;
+
+    -s|--secret-key)    # Secret Key
+    S3_SECRET_KEY="$2"
+    shift 2
+    ;;
+
+    -n|--name)          # Backup Name
+    S3_BACKUP_NAME="$2"
+    shift 2
+    ;;
+
+    -v|--verbose)
+    VERBOSE=1
+    shift
+    ;;
+
+    -h|--help)          # Show Help
+    usage
+    ;;
+
+    *)                  # Unknown option
+    POSITIONAL+=("$1")  # Save it in an array for later
+    shift               # Past argument
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+# Configure S3 Host
+configureEndpoint
+
+# Check if running interactive
+if [ -t 0 ]; then
+    # Interactive shell
+    # prompt user to select backup to restore
+
+    echo "Running Interactive, Listing Backups (Latest backup first)"
+    ARCHIVE=$(mc ls s3/${S3_BUCKET} | awk -F " " '{print $5}' | grep ^${S3_BACKUP_NAME} | sort -r | restore-select)
+    STATUS=$?
+
+    # Check if user selected something
+    if [ $STATUS == 0 ]; then
+        downloadBackup ${ARCHIVE}
+
+        # Extract Backup
+        restoreBackup ${ARCHIVE}
+
+        # Remove Backup
+        rm ${ARCHIVE}
+
+    else
+        echo "Cancelled!"
+
+    fi
+else
+    # Non-Interactive
+    # Restore latest backup
+    echo "Running Non-Interactive, Restoring Lastest backup"
+    ARCHIVE=$(mc ls s3/${S3_BUCKET} | awk -F " " '{print $5}' | grep ^${S3_BACKUP_NAME} | sort -r | head -n1)
+
+    # Download backup
+    downloadBackup ${ARCHIVE}
+
+    # Extract backup
+    restoreBackup ${ARCHIVE}
+
+    # Remove Backup
+    rm ${ARCHIVE}
+fi
 
 # EOF

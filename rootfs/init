@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+source /usr/local/etc/dockup.func
 
 # Parse Action
 case "$1" in
