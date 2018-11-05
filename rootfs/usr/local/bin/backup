@@ -1,0 +1,65 @@
+#!/bin/bash
+
+source /usr/local/etc/dockup.func
+
+# Parse Commandline options
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+KEY="$1"
+
+case "$KEY" in
+    -s3|--endpoint)      # S3 Endpoint
+    S3_ENDPOINT="$2"
+    shift 2
+    ;;
+
+    -b|--bucket)        # Bucket Name
+    S3_BUCKET="$2"
+    shift 2
+    ;;
+
+    -a|--access-key)    # Access Key
+    S3_ACCESS_KEY="$2"
+    shift 2
+    ;;
+
+    -s|--secret-key)    # Secret Key
+    S3_SECRET_KEY="$2"
+    shift 2
+    ;;
+
+    -n|--name)          # Backup Name
+    S3_BACKUP_NAME="$2"
+    shift 2
+    ;;
+
+    -h|--help)          # Show Help
+    usage
+    ;;
+
+    *)                  # Unknown option
+    POSITIONAL+=("$1")  # Save it in an array for later
+    shift               # Past argument
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+# Backup Filename
+readonly archive=$(backupFilename ${BACKUP_NAME})
+
+# Create Backup
+echo "Creating Backup"
+tar czf $archive --absolute-names ${POSITIONAL[@]}
+
+# Configure S3 Host
+mc config host add s3 ${S3_ENDPOINT} ${S3_ACCESS_KEY} ${S3_SECRET_KEY}
+
+# Upload backup
+mc cp $archive s3/${S3_BUCKET}/
+
+# Remove backup
+rm $archive
+
+# EOF

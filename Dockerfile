@@ -15,4 +15,12 @@ LABEL \
 	nl.timmertech.license=MIT
 
 RUN apk upgrade --update && \
-	apk add --update --no-cache curl bash tar gzip file ca-certificates
+	apk add --update --no-cache curl bash tar gzip file ca-certificates && \
+	apk add --no-cache --virtual .build-deps curl && \
+	curl https://dl.minio.io/client/mc/release/linux-amd64/mc > /usr/bin/mc && \
+	chmod +x /usr/bin/mc && apk del .build-deps
+
+COPY rootfs/ /
+
+ENTRYPOINT ["/init"]
+CMD []

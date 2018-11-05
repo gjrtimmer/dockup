@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Environment Variables
+S3_ENDPOINT=${ENDPOINT:-localhost:9000}
+S3_BUCKET=${BUCKET:-backup}
+S3_ACCESS_KEY=${ACCESS_KEY:-none}
+S3_SECRET_KEY=${SECRET_KEY:-none}
+S3_BACKUP_NAME=${BACKUP_NAME:-backup}
+
+# Usage / Help
+usage() {
+    echo -e "Dockup Help\n"
+    echo -e "Commands:"
+    echo -e "\tbackup\t<options> [path...]"
+    echo -e "\trestore\t<options>\n"
+    echo -e "Options:"
+    echo -e "\t-e, --endpoint <endpoint>\tS3 endpoint [\$ENDPOINT]"
+    echo -e "\t-a, --access-key <key>\t\tS3 Access Key [\$ACCESS_KEY]"
+    echo -e "\t-s, --secret-key <key>\t\tS3 Secret Key [\$SECRET_KEY]"
+    echo -e "\t-b, --bucket <bucket>\t\tBucket name [\$BUCKET]"
+    echo -e "\t-n, --name <name>\t\tBackup name [\$BACKUP_NAME]"
+    echo -e "\t-h, --help\t\t\tShow help"
+}
+
+backupTimestamp() {
+    echo $(date +"%Y%m%d-%H%M%S")
+}
+
+backupFilename() {
+    echo ${S3_BACKUP_NAME}.$(backupTimestamp).tar.gz
+}
+
+# EOF

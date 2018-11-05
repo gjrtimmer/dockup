@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source /usr/local/etc/dockup.func
+
+# EOF

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Parse Action
+case "$1" in
+    backup)
+        /usr/local/bin/backup "${@:2}"
+    ;;
+
+    restore)
+        /usr/local/bin/restore "${@:2}"
+    ;;
+
+    *)
+    usage
+    ;;
+esac
+
+# EOF
