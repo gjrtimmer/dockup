@@ -1,4 +1,4 @@
-[![build status](https://gitlab.timmertech.nl/docker/dockup/badges/master/build.svg)](https://gitlab.timmertech.nl/docker/dockup/commits/master)
+[![build status](https://gitlab.timmertech.nl/docker/dockup/badges/main/build.svg)](https://gitlab.timmertech.nl/docker/dockup/commits/main)
 
 # dockup
 
