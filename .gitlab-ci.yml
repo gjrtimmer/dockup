@@ -1,47 +1,63 @@
+image: registry.timmertech.nl/docker/docker:latest
+
 stages:
   - build
-  - dockerhub
+  - deploy
 
-docker:latest:
+include:
+  - project: templates/ci
+    file: docker.yml
+  - project: templates/ci
+    file: docker-hub.yml
+
+################################################################################
+# Template(s)
+################################################################################
+.build:
   stage: build
-  only: 
-    - master
+  interruptible: true
   script:
-    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
-    - docker build --pull --force-rm=true --squash 
-        --build-arg VCS_REF=`git rev-parse --short HEAD` 
-        --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` 
-        --tag=${CI_REGISTRY}/${CI_PROJECT_PATH} .
-    - docker push ${CI_REGISTRY}/${CI_PROJECT_PATH}
+    - docker build --pull
+      --build-arg VCS_REF="${CI_COMMIT_SHORT_SHA}"
+      --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
+      --build-arg CI_PROJECT_NAME="${CI_PROJECT_NAME}"
+      --build-arg CI_PROJECT_URL="${CI_PROJECT_URL}"
+      --build-arg DOCKER_IMAGE="${DOCKER_IMAGE}"
+      --build-arg DOCKER_PROXY=${DOCKER_PROXY_HOST}
+      --file=${DOCKER_FILE}
+      --tag=${DOCKER_IMAGE} .
+    - docker push ${DOCKER_IMAGE}
 
-docker:release:
-  stage: build
+################################################################################
+# Job Configuration
+################################################################################
+build:
+  extends: .build
+  only:
+    - main
+    - schedules
+
+dockerhub:
+  stage: deploy
+  extends: .dockerhub
+  variables:
+    DOCKERHUB_IMAGE: ${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/${CI_PROJECT_NAME}:latest
+  only:
+    - main
+    - schedules
+
+release:
+  extends: .build
+  variables:
+    DOCKER_IMAGE: ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_TAG}
   only:
     - tags
-  script:
-    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
-    - docker build --pull --force-rm=true --squash 
-        --build-arg VCS_REF=`git rev-parse --short HEAD` 
-        --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` 
-        --tag=${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_REF_NAME} .
-    - docker push ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_REF_NAME}
 
-dockerhub:latest:
-  stage: dockerhub
-  except:
-    - tags
-  before_script:
-    - apk add --update --no-cache curl
-  script:
-    - curl -s -H 'Content-Type:application/json' --data '{"build":true}' -X POST https://registry.hub.docker.com/u/datacore/dockup/trigger/${DOCKERHUB_TOKEN}/ > /dev/null
-  when: manual
-
-dockerhub:release:
-  stage: dockerhub
+dockerhub-release:
+  stage: deploy
+  extends: .dockerhub
+  variables:
+    DOCKER_IMAGE: ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_TAG}
+    DOCKERHUB_IMAGE: ${DOCKERHUB_REGISTRY}/${DOCKERHUB_NAMESPACE}/${CI_PROJECT_NAME}:${CI_COMMIT_TAG}
   only:
     - tags
-  before_script:
-    - apk add --update --no-cache curl
-  script:
-    - curl -s -H 'Content-Type:application/json' --data "{\"source_type\":\"Tag\",\"source_name\":\"${CI_COMMIT_REF_NAME}\"}" -X POST https://registry.hub.docker.com/u/datacore/dockup/trigger/${DOCKERHUB_TOKEN}/ > /dev/null
-  when: manual
